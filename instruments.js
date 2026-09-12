@@ -43,16 +43,16 @@ export const INSTRUMENTS = [
   fx('NZDJPY', 'NZD', 'JPY', true), fx('NZDCHF', 'NZD', 'CHF'), fx('NZDCAD', 'NZD', 'CAD'),
   fx('CADJPY', 'CAD', 'JPY', true), fx('CADCHF', 'CAD', 'CHF'), fx('CHFJPY', 'CHF', 'JPY', true),
   // --- indices: settle in their home currency, so a USD account converts on every one but US*/NAS/SPX ---
-  cfd('US30', 'Dow Jones 30', 'USD', INDEX, 1, 1, 2, 'USD per point', 'FCA/ESMA cap 1:20'),
-  cfd('NAS100', 'Nasdaq 100', 'USD', INDEX, 1, 1, 2, 'USD per point', 'FCA/ESMA cap 1:20'),
-  cfd('SPX500', 'S&P 500', 'USD', INDEX, 1, 1, 2, 'USD per point', 'FCA/ESMA cap 1:20'),
-  cfd('GER40', 'DAX 40', 'EUR', INDEX, 1, 1, 2, 'EUR per point', 'FCA/ESMA cap 1:20'),
-  cfd('UK100', 'FTSE 100', 'GBP', INDEX, 1, 1, 2, 'GBP per point', 'FCA/ESMA cap 1:20'),
-  cfd('JP225', 'Nikkei 225', 'JPY', INDEX, 1, 1, 2, 'JPY per point', 'FCA/ESMA cap 1:20'),
+  cfd('US30', 'Dow Jones 30', 'USD', INDEX, 1, 1, 2, 'per point', 'FCA/ESMA cap 1:20'),
+  cfd('NAS100', 'Nasdaq 100', 'USD', INDEX, 1, 1, 2, 'per point', 'FCA/ESMA cap 1:20'),
+  cfd('SPX500', 'S&P 500', 'USD', INDEX, 1, 1, 2, 'per point', 'FCA/ESMA cap 1:20'),
+  cfd('GER40', 'DAX 40', 'EUR', INDEX, 1, 1, 2, 'per point', 'FCA/ESMA cap 1:20'),
+  cfd('UK100', 'FTSE 100', 'GBP', INDEX, 1, 1, 2, 'per point', 'FCA/ESMA cap 1:20'),
+  cfd('JP225', 'Nikkei 225', 'JPY', INDEX, 1, 1, 2, 'per point', 'FCA/ESMA cap 1:20'),
   // --- energies ---
-  cfd('XTIUSD', 'WTI Crude Oil', 'USD', ENERGY, 1000, 0.01, 2, '1,000 barrels per lot', 'FCA/ESMA cap 1:10'),
-  cfd('XBRUSD', 'Brent Crude Oil', 'USD', ENERGY, 1000, 0.01, 2, '1,000 barrels per lot', 'FCA/ESMA cap 1:10'),
-  cfd('XNGUSD', 'Natural Gas', 'USD', ENERGY, 10000, 0.001, 3, '10,000 MMBtu per lot', 'FCA/ESMA cap 1:10'),
+  cfd('XTIUSD', 'WTI Crude Oil', 'USD', ENERGY, 1000, 0.01, 2, 'barrels', 'FCA/ESMA cap 1:10'),
+  cfd('XBRUSD', 'Brent Crude Oil', 'USD', ENERGY, 1000, 0.01, 2, 'barrels', 'FCA/ESMA cap 1:10'),
+  cfd('XNGUSD', 'Natural Gas', 'USD', ENERGY, 10000, 0.001, 3, 'MMBtu', 'FCA/ESMA cap 1:10'),
 ];
 
 export const GROUPS = [
@@ -73,9 +73,9 @@ export function findInstrument(symbol, overrides = {}) {
 
 /** Human-readable derivation of one lot, so a 10x contract-size error is visible at a glance. */
 export function describeLot(instrument, lots) {
-  const units = lots * instrument.contractSize;
   const fmt = (n) => n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const units = lots * instrument.contractSize;
   if (instrument.type === FX) return `${lots} lot = ${fmt(units)} ${instrument.base}`;
-  if (instrument.type === ENERGY) return `${lots} lot = ${fmt(units)} units (${instrument.unit})`;
-  return `${lots} lot = ${instrument.unit}`;
+  if (instrument.type === INDEX) return `${lots} lot = ${instrument.quote} ${fmt(units)} ${instrument.unit}`;
+  return `${lots} lot = ${fmt(units)} ${instrument.unit}`;
 }

@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src https://open.er-api.com/v6/latest/ https://api.frankfurter.dev/v1/; worker-src 'self'; base-uri 'none'; form-action 'none'; require-trusted-types-for 'script'; trusted-types sw-loader; upgrade-insecure-requests">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0a0b">
+<meta name="description" content="Work out the margin, notional value, pip value and safe position size for a forex or CFD trade.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lot Size">
+<title>Lot Size</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="shell">
+  <header class="hdr">
+    <div class="mark" aria-hidden="true">FX</div>
+    <div>
+      <h1>Lot Size</h1>
+      <div class="sub" id="acct-summary">USD account &middot; 1:400</div>
+    </div>
+    <button type="button" class="rate-chip" id="rate-chip" aria-describedby="rate-detail">
+      <span class="dot none" id="rate-dot"></span><span id="rate-label">Loading rates</span>
+    </button>
+  </header>
+  <p class="sr" id="rate-detail">Tap to refresh exchange rates.</p>
+
+  <!-- ============================== SIZE ============================== -->
+  <section class="panel" id="panel-size" role="tabpanel" aria-labelledby="tab-size">
+    <div class="card">
+      <div class="field">
+        <label for="sym">Instrument</label>
+        <select id="sym"></select>
+      </div>
+      <div class="field">
+        <span class="flabel" id="dir-label">Direction</span>
+        <div class="seg" role="group" aria-labelledby="dir-label">
+          <button type="button" class="pill" data-dir="buy" aria-pressed="true">Buy</button>
+          <button type="button" class="pill" data-dir="sell" aria-pressed="false">Sell</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="flabel">
+          <label for="price">Price</label>
+          <span class="spacer"></span>
+          <button type="button" class="pill" id="price-auto" aria-pressed="true">Live</button>
+        </span>
+        <input type="text" id="price" inputmode="decimal" autocomplete="off" enterkeyhint="done">
+        <p class="note" id="price-note"></p>
+      </div>
+      <div class="field">
+        <label for="lots">Lot size</label>
+        <div class="stepper">
+          <button type="button" class="step-btn" id="lots-down" aria-label="Decrease lot size">&minus;</button>
+          <input type="text" id="lots" inputmode="decimal" value="1.00" autocomplete="off">
+          <button type="button" class="step-btn" id="lots-up" aria-label="Increase lot size">+</button>
+        </div>
+        <div class="pills" id="lot-chips"></div>
+      </div>
+      <div class="field">
+        <span class="flabel"><label for="lev">Leverage</label><span class="spacer"></span>
+          <span class="note" id="lev-cap"></span></span>
+        <div class="pills" id="lev-chips"></div>
+        <p class="err" id="size-err" hidden></p>
+      </div>
+    </div>
+
+    <div class="card hero">
+      <div class="label">Margin required to open</div>
+      <div class="value" id="r-margin">&mdash;</div>
+      <div class="metrics">
+        <div class="metric"><div class="k">Notional value</div><div class="v" id="r-notional">&mdash;</div></div>
+        <div class="metric"><div class="k" id="r-pip-label">Value per pip</div><div class="v" id="r-pip">&mdash;</div></div>
+        <div class="metric"><div class="k">Free margin after</div><div class="v" id="r-free">&mdash;</div></div>
+        <div class="metric"><div class="k">Margin level after</div><div class="v" id="r-level">&mdash;</div></div>
+      </div>
+      <p class="derivation" id="r-derivation"></p>
+      <div class="usage">
+        <div class="usage-bar" role="img" aria-labelledby="usage-legend">
+          <span class="seg-used" id="bar-used"></span>
+          <span class="seg-new" id="bar-new"></span>
+          <span class="seg-free" id="bar-free"></span>
+        </div>
+        <div class="legend" id="usage-legend">
+          <span><i class="seg-used"></i><span id="lg-used">Already used</span></span>
+          <span><i class="seg-new"></i><span id="lg-new">This trade</span></span>
+          <span><i class="seg-free"></i><span id="lg-free">Free</span></span>
+        </div>
+      </div>
+      <div class="alert warn" id="size-alert" hidden></div>
+      <button type="button" class="btn" id="add-pos">Add to open positions</button>
+    </div>
+  </section>
+
+  <!-- ============================== RISK ============================== -->
+  <section class="panel" id="panel-risk" role="tabpanel" aria-labelledby="tab-risk" hidden>
+    <div class="card">
+      <h2>Position size from risk <span class="hint">&mdash; how big should this trade be?</span></h2>
+      <div class="field">
+        <label for="risk-pct">Risk per trade</label>
+        <div class="pills" id="risk-chips"></div>
+        <input type="text" id="risk-pct" inputmode="decimal" value="1" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="stop-pips">Stop loss distance (pips)</label>
+        <input type="text" id="stop-pips" inputmode="decimal" value="25" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="spread">Spread (pips)</label>
+        <input type="text" id="spread" inputmode="decimal" value="0" autocomplete="off">
+        <p class="note">A stop is not hit at the mid price. Leaving this at zero understates your risk.</p>
+      </div>
+      <div class="field">
+        <label for="commission">Commission per lot, round turn</label>
+        <input type="text" id="commission" inputmode="decimal" value="0" autocomplete="off">
+      </div>
+      <p class="err" id="risk-err" hidden></p>
+    </div>
+
+    <div class="card hero">
+      <div class="label">Position size to use</div>
+      <div class="value" id="k-lots">&mdash;</div>
+      <div class="metrics">
+        <div class="metric"><div class="k">Cash at risk</div><div class="v" id="k-risk">&mdash;</div></div>
+        <div class="metric"><div class="k">Risk budget</div><div class="v" id="k-budget">&mdash;</div></div>
+        <div class="metric"><div class="k">Margin needed</div><div class="v" id="k-margin">&mdash;</div></div>
+        <div class="metric"><div class="k">Spread + commission</div><div class="v" id="k-costs">&mdash;</div></div>
+      </div>
+      <p class="derivation" id="k-derivation"></p>
+      <div class="alert warn" id="risk-alert" hidden></div>
+    </div>
+  </section>
+
+  <!-- ============================= TRADE ============================== -->
+  <section class="panel" id="panel-trade" role="tabpanel" aria-labelledby="tab-trade" hidden>
+    <div class="card">
+      <h2>Trade outcome <span class="hint">&mdash; what happens at the stop and the target?</span></h2>
+      <div class="field"><label for="t-entry">Entry price</label>
+        <input type="text" id="t-entry" inputmode="decimal" autocomplete="off"></div>
+      <div class="field"><label for="t-sl">Stop loss</label>
+        <input type="text" id="t-sl" inputmode="decimal" autocomplete="off"></div>
+      <div class="field"><label for="t-tp">Take profit</label>
+        <input type="text" id="t-tp" inputmode="decimal" autocomplete="off"></div>
+      <div class="field"><label for="t-lots">Lot size</label>
+        <input type="text" id="t-lots" inputmode="decimal" value="1.00" autocomplete="off"></div>
+      <p class="err" id="trade-err" hidden></p>
+    </div>
+
+    <div class="card hero">
+      <div class="label">Reward to risk</div>
+      <div class="value" id="t-rr">&mdash;</div>
+      <div class="metrics">
+        <div class="metric"><div class="k">Profit at target</div><div class="v pos" id="t-tp-pl">&mdash;</div></div>
+        <div class="metric"><div class="k">Loss at stop</div><div class="v neg" id="t-sl-pl">&mdash;</div></div>
+        <div class="metric"><div class="k">Distance to target</div><div class="v" id="t-tp-pips">&mdash;</div></div>
+        <div class="metric"><div class="k">Distance to stop</div><div class="v" id="t-sl-pips">&mdash;</div></div>
+      </div>
+      <p class="derivation" id="t-derivation"></p>
+      <div class="alert warn" id="trade-alert" hidden></div>
+    </div>
+  </section>
+
+  <!-- ============================ ACCOUNT ============================= -->
+  <section class="panel" id="panel-account" role="tabpanel" aria-labelledby="tab-account" hidden>
+    <div class="card">
+      <h2>Account</h2>
+      <div class="field"><label for="a-balance">Balance</label>
+        <input type="text" id="a-balance" inputmode="decimal" value="5000" autocomplete="off"></div>
+      <div class="field"><label for="a-ccy">Account currency</label>
+        <select id="a-ccy"></select></div>
+      <div class="field"><label for="a-lev">Default leverage (1:x)</label>
+        <input type="text" id="a-lev" inputmode="numeric" value="400" autocomplete="off"></div>
+      <div class="field"><label for="a-stopout">Broker stop-out level (%)</label>
+        <input type="text" id="a-stopout" inputmode="decimal" value="50" autocomplete="off"></div>
+    </div>
+
+    <div class="card">
+      <h2>Open positions <span class="hint">&mdash; margin already committed</span></h2>
+      <div class="rows" id="pos-rows"><p class="empty" id="pos-empty">Nothing open. Add a position to see its effect on free margin.</p></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">Used margin</div><div class="v" id="a-used">&mdash;</div></div>
+        <div class="metric"><div class="k">Free margin</div><div class="v" id="a-free">&mdash;</div></div>
+        <div class="metric"><div class="k">Margin level</div><div class="v" id="a-level">&mdash;</div></div>
+        <div class="metric"><div class="k">Pips to stop-out</div><div class="v" id="a-stopdist">&mdash;</div></div>
+      </div>
+      <div class="alert bad" id="acct-alert" hidden></div>
+      <p class="note">Margin is held at the rate when the position opened, which is how most retail platforms behave. The stop-out distance assumes the position below moves against you alone.</p>
+    </div>
+
+    <div class="card">
+      <h2>Contract specification <span class="hint">&mdash; check against your broker</span></h2>
+      <p class="note" id="spec-for"></p>
+      <div class="field"><label for="s-contract">Contract size (units per lot)</label>
+        <input type="text" id="s-contract" inputmode="decimal" autocomplete="off"></div>
+      <div class="field"><label for="s-pip">Pip / point size</label>
+        <input type="text" id="s-pip" inputmode="decimal" autocomplete="off"></div>
+      <div class="field"><label for="s-margin-mode">Margin basis</label>
+        <select id="s-margin-mode">
+          <option value="">Use account leverage</option>
+          <option value="leverage">This instrument: leverage</option>
+          <option value="percent">This instrument: margin %</option>
+        </select></div>
+      <div class="field" id="s-margin-value-wrap" hidden><label for="s-margin-value">Value</label>
+        <input type="text" id="s-margin-value" inputmode="decimal" autocomplete="off"></div>
+      <button type="button" class="btn" id="s-reset">Reset to defaults</button>
+      <p class="note">Contract sizes genuinely differ between brokers &mdash; oil is 1,000 barrels per lot at most and 100 at some, and index point values range from 0.10 to 25. A mismatch here is a silent 10&times; or 100&times; error.</p>
+    </div>
+
+    <div class="card">
+      <h2>Exchange rates</h2>
+      <div class="rows">
+        <div class="row"><div class="grow"><div class="sym" id="rt-source">&mdash;</div>
+          <div class="meta" id="rt-updated">&mdash;</div></div></div>
+      </div>
+      <p class="note" id="rt-legs"></p>
+      <button type="button" class="btn primary" id="rt-refresh">Refresh rates</button>
+      <p class="note">Reference rates are published once a day and are mid-market, so they will differ slightly from your broker's quote. Override the price on the Size tab to match your fill exactly.</p>
+    </div>
+  </section>
+
+  <p class="foot">
+    <span id="attribution">&nbsp;</span><br>
+    Mid-market reference rates for planning only. Not investment advice.
+  </p>
+</div>
+
+<nav class="tabbar">
+  <div class="inner" role="tablist" aria-label="Sections">
+    <button type="button" class="tab" id="tab-size" role="tab" aria-selected="true" aria-controls="panel-size" data-panel="size">Size</button>
+    <button type="button" class="tab" id="tab-risk" role="tab" aria-selected="false" aria-controls="panel-risk" data-panel="risk">Risk</button>
+    <button type="button" class="tab" id="tab-trade" role="tab" aria-selected="false" aria-controls="panel-trade" data-panel="trade">Trade</button>
+    <button type="button" class="tab" id="tab-account" role="tab" aria-selected="false" aria-controls="panel-account" data-panel="account">Account</button>
+  </div>
+</nav>
+
+<p class="sr" id="live" role="status" aria-live="polite"></p>
+<script type="module" src="app.js"></script>
+</body>
+</html>

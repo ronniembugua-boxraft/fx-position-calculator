@@ -1,7 +1,7 @@
 {
   "project": "FX Position Calculator",
   "ledger_version": "1.0",
-  "last_change_id": 2,
+  "last_change_id": 3,
   "changes": [
     {
       "id": "CHG-001",
@@ -122,6 +122,89 @@
         "Remove instruments.js and rates.js"
       ],
       "protected": true
+    },
+    {
+      "id": "CHG-003",
+      "timestamp": "2026-09-12T11:00:00Z",
+      "type": "feature",
+      "summary": "Mobile-first PWA: four-tab interface, dark/acid-lime design system, offline service worker, installable manifest",
+      "files_modified": [
+        "index.html",
+        "styles.css",
+        "app.js",
+        "state.js",
+        "views.js",
+        "format.js",
+        "sw.js",
+        "manifest.webmanifest",
+        "icon.svg",
+        "icon-180.png",
+        "icon-192.png",
+        "icon-512.png",
+        "icon-maskable-512.png",
+        "README.md"
+      ],
+      "functions_changed": [
+        "boot",
+        "bindNumber",
+        "syncInputs",
+        "renderSize",
+        "renderRisk",
+        "renderTrade",
+        "renderAccount",
+        "renderPositions",
+        "renderRateChip",
+        "livePrice",
+        "describeLot"
+      ],
+      "dependencies": {
+        "depends_on": [
+          "CHG-001",
+          "CHG-002"
+        ],
+        "affects": [
+          "feature-size-tab",
+          "feature-risk-tab",
+          "feature-trade-tab",
+          "feature-account-tab"
+        ]
+      },
+      "security_review": {
+        "passed": true,
+        "checks": [
+          "csp-default-src-none",
+          "trusted-types",
+          "no-innerhtml",
+          "no-inline-handlers",
+          "no-inline-styles",
+          "referrer-policy",
+          "sw-same-origin-only",
+          "no-opaque-caching",
+          "localstorage-only"
+        ]
+      },
+      "test_verification": {
+        "playwright_tested": true,
+        "regression_tested": true,
+        "test_steps": [
+          "navigate to /index.html at 375x812",
+          "verify zero console errors",
+          "EURUSD live: notional reconciles with the displayed price, margin = price*100000/400",
+          "USDJPY: margin is exactly $250.00 and price shows 3 digits",
+          "US30: no live price offered, refuses to compute, then margin = $96.25 via the CFD path",
+          "price '1,085': rejected as ambiguous, results blanked to em dash",
+          "Risk: 0.20 lots at 25 pips; with 1.2 spread + $7 commission drops to 0.42 lots at $49.98",
+          "Trade: R:R 2.00:1, +$420/-$210, wrong-side stop caught",
+          "Account: add position -> used $290.02, free $4709.98, level 1724%, 485 pips to stop-out",
+          "cleanup: clear localStorage and unregister the service worker"
+        ],
+        "note": "44 unit tests plus a live browser sweep at iPhone viewport. Zero console errors."
+      },
+      "rollback_steps": [
+        "Remove index.html, styles.css, app.js, state.js, views.js, format.js, sw.js, manifest.webmanifest and icons",
+        "calc.js, instruments.js and rates.js remain independently usable"
+      ],
+      "protected": true
     }
   ],
   "protected_patterns": [
@@ -142,6 +225,12 @@
       "finding": "parseFloat/comma-strip locale bug caused a silent 1000x notional error on EU-locale price entry",
       "resolution": "parseDecimal refuses ambiguous input rather than guessing",
       "severity": "high"
+    },
+    {
+      "change": "CHG-003",
+      "finding": "Trusted Types blocked service worker registration; an unparseable input left a stale plausible result on screen",
+      "resolution": "one-file createScriptURL policy instead of weakening CSP; invalid input now nulls the value and blanks the result",
+      "severity": "medium"
     }
   ]
 }

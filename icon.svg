@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Lot Size">
+  <rect width="512" height="512" rx="114" fill="#d9f24b"/>
+  <text x="256" y="258" font-family="-apple-system, Helvetica, Arial, sans-serif" font-size="196"
+        font-weight="800" fill="#0a0a0b" text-anchor="middle" dominant-baseline="central"
+        letter-spacing="-10">FX</text>
+</svg>
