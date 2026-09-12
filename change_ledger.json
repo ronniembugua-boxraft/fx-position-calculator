@@ -1,0 +1,74 @@
+{
+  "project": "FX Position Calculator",
+  "ledger_version": "1.0",
+  "last_change_id": 1,
+  "changes": [
+    {
+      "id": "CHG-001",
+      "timestamp": "2026-09-12T09:40:00Z",
+      "type": "feature",
+      "summary": "Pure calculation core: FX and CFD margin, notional, pip value, risk sizing, P/L, margin level and stop-out distance",
+      "files_modified": [
+        "calc.js",
+        "test/calc.test.mjs",
+        ".github/workflows/ci.yml"
+      ],
+      "functions_changed": [
+        "convert",
+        "alignRatesToPrice",
+        "notional",
+        "requiredMargin",
+        "pipValue",
+        "toPips",
+        "lotsFromRisk",
+        "profitLoss",
+        "riskReward",
+        "marginLevel",
+        "pipsToStopOut",
+        "freeMargin",
+        "num",
+        "isCfd"
+      ],
+      "dependencies": {
+        "depends_on": [],
+        "affects": [
+          "feature-size-tab",
+          "feature-risk-tab",
+          "feature-trade-tab",
+          "feature-account-tab"
+        ]
+      },
+      "security_review": {
+        "passed": true,
+        "checks": [
+          "input-validation",
+          "divide-by-zero-guards",
+          "nan-infinity-rejection",
+          "no-secrets",
+          "no-dependencies"
+        ]
+      },
+      "test_verification": {
+        "playwright_tested": false,
+        "test_steps": [
+          "node --test 'test/*.test.mjs'"
+        ],
+        "regression_tested": true,
+        "note": "21 unit tests, all passing. Reference values independently derived by five agents, unanimous."
+      },
+      "rollback_steps": [
+        "Delete calc.js and test/calc.test.mjs",
+        "Revert the ci.yml test step"
+      ],
+      "protected": true
+    }
+  ],
+  "protected_patterns": [
+    {
+      "pattern": "calc.js",
+      "reason": "Verified financial math. Reference values cross-checked five ways; the CFD-vs-FX margin branch, USD-anchored triangulation, closing-rate P/L conversion and round-down risk sizing are all load-bearing and must not be 'simplified'.",
+      "added_by": "CHG-001"
+    }
+  ],
+  "security_audit_log": []
+}
