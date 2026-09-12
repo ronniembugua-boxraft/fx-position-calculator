@@ -1,7 +1,7 @@
 {
   "project": "FX Position Calculator",
   "ledger_version": "1.0",
-  "last_change_id": 1,
+  "last_change_id": 2,
   "changes": [
     {
       "id": "CHG-001",
@@ -61,6 +61,67 @@
         "Revert the ci.yml test step"
       ],
       "protected": true
+    },
+    {
+      "id": "CHG-002",
+      "timestamp": "2026-09-12T10:05:00Z",
+      "type": "security",
+      "summary": "Fix silent 1000x locale parsing bug; add margin-percent mode, spread/commission and free-margin capping to risk sizing; add instrument table and validated rates layer",
+      "files_modified": [
+        "calc.js",
+        "instruments.js",
+        "rates.js",
+        "test/calc.edge.test.mjs",
+        "test/rates.test.mjs"
+      ],
+      "functions_changed": [
+        "parseDecimal",
+        "num",
+        "requiredMargin",
+        "marginDivisor",
+        "lotsFromRisk",
+        "conversionLegs",
+        "validateRates",
+        "freshness",
+        "getRates",
+        "loadCache",
+        "saveCache"
+      ],
+      "dependencies": {
+        "depends_on": [
+          "CHG-001"
+        ],
+        "affects": [
+          "feature-size-tab",
+          "feature-risk-tab",
+          "feature-account-tab"
+        ]
+      },
+      "security_review": {
+        "passed": true,
+        "checks": [
+          "untrusted-input-validation",
+          "locale-parsing",
+          "prototype-pollution",
+          "divide-by-zero",
+          "no-secrets",
+          "https-only",
+          "no-preflight-headers"
+        ]
+      },
+      "test_verification": {
+        "playwright_tested": false,
+        "test_steps": [
+          "node --test 'test/*.test.mjs'"
+        ],
+        "regression_tested": true,
+        "note": "44 tests passing. parseFloat('1,085')===1 and comma-stripping both produce 1000x errors; ambiguous input is now refused."
+      },
+      "rollback_steps": [
+        "Revert parseDecimal in calc.js and restore the comma-strip in num()",
+        "Remove instruments.js and rates.js"
+      ],
+      "protected": true
     }
   ],
   "protected_patterns": [
@@ -68,7 +129,19 @@
       "pattern": "calc.js",
       "reason": "Verified financial math. Reference values cross-checked five ways; the CFD-vs-FX margin branch, USD-anchored triangulation, closing-rate P/L conversion and round-down risk sizing are all load-bearing and must not be 'simplified'.",
       "added_by": "CHG-001"
+    },
+    {
+      "pattern": "rates.js",
+      "reason": "Untrusted third-party input boundary. Validation is fail-closed and the fetch must stay header-free: open.er-api.com answers OPTIONS with 405, so any custom header triggers a preflight that kills the request in-browser while still working in curl.",
+      "added_by": "CHG-002"
     }
   ],
-  "security_audit_log": []
+  "security_audit_log": [
+    {
+      "change": "CHG-002",
+      "finding": "parseFloat/comma-strip locale bug caused a silent 1000x notional error on EU-locale price entry",
+      "resolution": "parseDecimal refuses ambiguous input rather than guessing",
+      "severity": "high"
+    }
+  ]
 }
