@@ -78,9 +78,9 @@ export function renderSize() {
     seg('bar-used', used);
     seg('bar-new', m.acct);
     seg('bar-free', equity - used - m.acct);
-    setText($('lg-used'), `Already used ${money(used, ctx.state.acctCcy)}`);
-    setText($('lg-new'), `This trade ${money(m.acct, ctx.state.acctCcy)}`);
-    setText($('lg-free'), `Free ${money(Math.max(0, freeAfter), ctx.state.acctCcy)}`);
+    setText($('lg-used'), money(used, ctx.state.acctCcy));
+    setText($('lg-new'), money(m.acct, ctx.state.acctCcy));
+    setText($('lg-free'), money(Math.max(0, freeAfter), ctx.state.acctCcy));
 
     setAlert($('size-alert'),
       freeAfter < 0 ? `This position needs ${money(m.acct, ctx.state.acctCcy)} but only ${money(freeBefore, ctx.state.acctCcy)} is free. Your broker would reject it.`

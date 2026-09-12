@@ -7,6 +7,7 @@ No build step, no dependencies, no backend, no accounts. Six hand-written ES mod
 service worker.
 
 ![Size tab](docs/size-tab.png)
+![Result card](docs/size-result.png)
 
 ## What it does
 

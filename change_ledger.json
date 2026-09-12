@@ -1,7 +1,7 @@
 {
   "project": "FX Position Calculator",
   "ledger_version": "1.0",
-  "last_change_id": 3,
+  "last_change_id": 4,
   "changes": [
     {
       "id": "CHG-001",
@@ -205,6 +205,55 @@
         "calc.js, instruments.js and rates.js remain independently usable"
       ],
       "protected": true
+    },
+    {
+      "id": "CHG-004",
+      "timestamp": "2026-09-12T11:45:00Z",
+      "type": "fix",
+      "summary": "Chip rows wrap instead of scrolling (last chip was sliced at the screen edge); margin-usage legend moved to a fixed 3-column grid",
+      "files_modified": [
+        "styles.css",
+        "index.html",
+        "views.js",
+        "README.md"
+      ],
+      "functions_changed": [
+        "renderSize"
+      ],
+      "dependencies": {
+        "depends_on": [
+          "CHG-003"
+        ],
+        "affects": [
+          "feature-size-tab",
+          "feature-risk-tab"
+        ]
+      },
+      "security_review": {
+        "passed": true,
+        "checks": [
+          "no-new-dom-sinks",
+          "textcontent-only"
+        ]
+      },
+      "test_verification": {
+        "playwright_tested": true,
+        "regression_tested": true,
+        "test_steps": [
+          "measure at 375x812",
+          "lot and leverage chips: clipped=false, 2 rows each",
+          "legend: 1 row, three equal 95px columns",
+          "field gaps consistently 14px",
+          "no horizontal overflow",
+          "34px clearance above the tab bar"
+        ],
+        "note": "44 unit tests still passing; measured rather than eyeballed."
+      },
+      "rollback_steps": [
+        "Restore overflow-x:auto on .pills and the flex legend in styles.css",
+        "Revert the legend markup in index.html and the three setText calls in views.js"
+      ],
+      "protected": false
     }
   ],
   "protected_patterns": [
