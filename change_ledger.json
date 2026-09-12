@@ -1,0 +1,326 @@
+{
+  "project": "FX Position Calculator",
+  "ledger_version": "1.0",
+  "last_change_id": 5,
+  "changes": [
+    {
+      "id": "CHG-001",
+      "timestamp": "2026-09-12T09:40:00Z",
+      "type": "feature",
+      "summary": "Pure calculation core: FX and CFD margin, notional, pip value, risk sizing, P/L, margin level and stop-out distance",
+      "files_modified": [
+        "calc.js",
+        "test/calc.test.mjs",
+        ".github/workflows/ci.yml"
+      ],
+      "functions_changed": [
+        "convert",
+        "alignRatesToPrice",
+        "notional",
+        "requiredMargin",
+        "pipValue",
+        "toPips",
+        "lotsFromRisk",
+        "profitLoss",
+        "riskReward",
+        "marginLevel",
+        "pipsToStopOut",
+        "freeMargin",
+        "num",
+        "isCfd"
+      ],
+      "dependencies": {
+        "depends_on": [],
+        "affects": [
+          "feature-size-tab",
+          "feature-risk-tab",
+          "feature-trade-tab",
+          "feature-account-tab"
+        ]
+      },
+      "security_review": {
+        "passed": true,
+        "checks": [
+          "input-validation",
+          "divide-by-zero-guards",
+          "nan-infinity-rejection",
+          "no-secrets",
+          "no-dependencies"
+        ]
+      },
+      "test_verification": {
+        "playwright_tested": false,
+        "test_steps": [
+          "node --test 'test/*.test.mjs'"
+        ],
+        "regression_tested": true,
+        "note": "21 unit tests, all passing. Reference values independently derived by five agents, unanimous."
+      },
+      "rollback_steps": [
+        "Delete calc.js and test/calc.test.mjs",
+        "Revert the ci.yml test step"
+      ],
+      "protected": true
+    },
+    {
+      "id": "CHG-002",
+      "timestamp": "2026-09-12T10:05:00Z",
+      "type": "security",
+      "summary": "Fix silent 1000x locale parsing bug; add margin-percent mode, spread/commission and free-margin capping to risk sizing; add instrument table and validated rates layer",
+      "files_modified": [
+        "calc.js",
+        "instruments.js",
+        "rates.js",
+        "test/calc.edge.test.mjs",
+        "test/rates.test.mjs"
+      ],
+      "functions_changed": [
+        "parseDecimal",
+        "num",
+        "requiredMargin",
+        "marginDivisor",
+        "lotsFromRisk",
+        "conversionLegs",
+        "validateRates",
+        "freshness",
+        "getRates",
+        "loadCache",
+        "saveCache"
+      ],
+      "dependencies": {
+        "depends_on": [
+          "CHG-001"
+        ],
+        "affects": [
+          "feature-size-tab",
+          "feature-risk-tab",
+          "feature-account-tab"
+        ]
+      },
+      "security_review": {
+        "passed": true,
+        "checks": [
+          "untrusted-input-validation",
+          "locale-parsing",
+          "prototype-pollution",
+          "divide-by-zero",
+          "no-secrets",
+          "https-only",
+          "no-preflight-headers"
+        ]
+      },
+      "test_verification": {
+        "playwright_tested": false,
+        "test_steps": [
+          "node --test 'test/*.test.mjs'"
+        ],
+        "regression_tested": true,
+        "note": "44 tests passing. parseFloat('1,085')===1 and comma-stripping both produce 1000x errors; ambiguous input is now refused."
+      },
+      "rollback_steps": [
+        "Revert parseDecimal in calc.js and restore the comma-strip in num()",
+        "Remove instruments.js and rates.js"
+      ],
+      "protected": true
+    },
+    {
+      "id": "CHG-003",
+      "timestamp": "2026-09-12T11:00:00Z",
+      "type": "feature",
+      "summary": "Mobile-first PWA: four-tab interface, dark/acid-lime design system, offline service worker, installable manifest",
+      "files_modified": [
+        "index.html",
+        "styles.css",
+        "app.js",
+        "state.js",
+        "views.js",
+        "format.js",
+        "sw.js",
+        "manifest.webmanifest",
+        "icon.svg",
+        "icon-180.png",
+        "icon-192.png",
+        "icon-512.png",
+        "icon-maskable-512.png",
+        "README.md"
+      ],
+      "functions_changed": [
+        "boot",
+        "bindNumber",
+        "syncInputs",
+        "renderSize",
+        "renderRisk",
+        "renderTrade",
+        "renderAccount",
+        "renderPositions",
+        "renderRateChip",
+        "livePrice",
+        "describeLot"
+      ],
+      "dependencies": {
+        "depends_on": [
+          "CHG-001",
+          "CHG-002"
+        ],
+        "affects": [
+          "feature-size-tab",
+          "feature-risk-tab",
+          "feature-trade-tab",
+          "feature-account-tab"
+        ]
+      },
+      "security_review": {
+        "passed": true,
+        "checks": [
+          "csp-default-src-none",
+          "trusted-types",
+          "no-innerhtml",
+          "no-inline-handlers",
+          "no-inline-styles",
+          "referrer-policy",
+          "sw-same-origin-only",
+          "no-opaque-caching",
+          "localstorage-only"
+        ]
+      },
+      "test_verification": {
+        "playwright_tested": true,
+        "regression_tested": true,
+        "test_steps": [
+          "navigate to /index.html at 375x812",
+          "verify zero console errors",
+          "EURUSD live: notional reconciles with the displayed price, margin = price*100000/400",
+          "USDJPY: margin is exactly $250.00 and price shows 3 digits",
+          "US30: no live price offered, refuses to compute, then margin = $96.25 via the CFD path",
+          "price '1,085': rejected as ambiguous, results blanked to em dash",
+          "Risk: 0.20 lots at 25 pips; with 1.2 spread + $7 commission drops to 0.42 lots at $49.98",
+          "Trade: R:R 2.00:1, +$420/-$210, wrong-side stop caught",
+          "Account: add position -> used $290.02, free $4709.98, level 1724%, 485 pips to stop-out",
+          "cleanup: clear localStorage and unregister the service worker"
+        ],
+        "note": "44 unit tests plus a live browser sweep at iPhone viewport. Zero console errors."
+      },
+      "rollback_steps": [
+        "Remove index.html, styles.css, app.js, state.js, views.js, format.js, sw.js, manifest.webmanifest and icons",
+        "calc.js, instruments.js and rates.js remain independently usable"
+      ],
+      "protected": true
+    },
+    {
+      "id": "CHG-004",
+      "timestamp": "2026-09-12T11:45:00Z",
+      "type": "fix",
+      "summary": "Chip rows wrap instead of scrolling (last chip was sliced at the screen edge); margin-usage legend moved to a fixed 3-column grid",
+      "files_modified": [
+        "styles.css",
+        "index.html",
+        "views.js",
+        "README.md"
+      ],
+      "functions_changed": [
+        "renderSize"
+      ],
+      "dependencies": {
+        "depends_on": [
+          "CHG-003"
+        ],
+        "affects": [
+          "feature-size-tab",
+          "feature-risk-tab"
+        ]
+      },
+      "security_review": {
+        "passed": true,
+        "checks": [
+          "no-new-dom-sinks",
+          "textcontent-only"
+        ]
+      },
+      "test_verification": {
+        "playwright_tested": true,
+        "regression_tested": true,
+        "test_steps": [
+          "measure at 375x812",
+          "lot and leverage chips: clipped=false, 2 rows each",
+          "legend: 1 row, three equal 95px columns",
+          "field gaps consistently 14px",
+          "no horizontal overflow",
+          "34px clearance above the tab bar"
+        ],
+        "note": "44 unit tests still passing; measured rather than eyeballed."
+      },
+      "rollback_steps": [
+        "Restore overflow-x:auto on .pills and the flex legend in styles.css",
+        "Revert the legend markup in index.html and the three setText calls in views.js"
+      ],
+      "protected": false
+    },
+    {
+      "id": "CHG-005",
+      "timestamp": "2026-09-12T12:10:00Z",
+      "type": "fix",
+      "summary": "Legend amounts were offset 12px from their labels; numeric chips rendered at uneven widths from proportional figures",
+      "files_modified": [
+        "styles.css"
+      ],
+      "functions_changed": [],
+      "dependencies": {
+        "depends_on": [
+          "CHG-004"
+        ],
+        "affects": [
+          "feature-size-tab",
+          "feature-risk-tab"
+        ]
+      },
+      "security_review": {
+        "passed": true,
+        "checks": [
+          "css-only-change"
+        ]
+      },
+      "test_verification": {
+        "playwright_tested": true,
+        "regression_tested": true,
+        "test_steps": [
+          "measure at 375x812",
+          "legend label-to-value offset: 0px on all three columns (was 12px)",
+          "lot chip widths: all 61.65px, spread 0 (was 2.22px)",
+          "no horizontal overflow"
+        ],
+        "note": "Both reported from zoomed screenshots and confirmed by measurement before fixing."
+      },
+      "rollback_steps": [
+        "Remove margin-left:12px from .legend .lg-v",
+        "Remove font-variant-numeric:tabular-nums from .pill"
+      ],
+      "protected": false
+    }
+  ],
+  "protected_patterns": [
+    {
+      "pattern": "calc.js",
+      "reason": "Verified financial math. Reference values cross-checked five ways; the CFD-vs-FX margin branch, USD-anchored triangulation, closing-rate P/L conversion and round-down risk sizing are all load-bearing and must not be 'simplified'.",
+      "added_by": "CHG-001"
+    },
+    {
+      "pattern": "rates.js",
+      "reason": "Untrusted third-party input boundary. Validation is fail-closed and the fetch must stay header-free: open.er-api.com answers OPTIONS with 405, so any custom header triggers a preflight that kills the request in-browser while still working in curl.",
+      "added_by": "CHG-002"
+    }
+  ],
+  "security_audit_log": [
+    {
+      "change": "CHG-002",
+      "finding": "parseFloat/comma-strip locale bug caused a silent 1000x notional error on EU-locale price entry",
+      "resolution": "parseDecimal refuses ambiguous input rather than guessing",
+      "severity": "high"
+    },
+    {
+      "change": "CHG-003",
+      "finding": "Trusted Types blocked service worker registration; an unparseable input left a stale plausible result on screen",
+      "resolution": "one-file createScriptURL policy instead of weakening CSP; invalid input now nulls the value and blanks the result",
+      "severity": "medium"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feat/**', 'fix/**', 'chore/**']
+  pull_request:
+    branches: [main]
+
+# Least privilege by default; jobs opt in to more where required.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Syntax, tests and static checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Confirm zero runtime dependencies
+        run: |
+          if [ -f package-lock.json ] || [ -d node_modules ]; then
+            echo "::error::This project must stay dependency-free."; exit 1
+          fi
+          echo "OK - no lockfile, no node_modules."
+      - name: Syntax check every JavaScript file
+        run: |
+          fail=0
+          while IFS= read -r f; do
+            node --check "$f" || { echo "::error file=$f::syntax error"; fail=1; }
+          done < <(find . -name '*.js' -o -name '*.mjs' | grep -v '^./.git/')
+          exit $fail
+      - name: Unit tests
+        run: node --test --test-reporter=spec 'test/*.test.mjs'
+      - name: Guard against innerHTML and inline handlers
+        run: |
+          # XSS defence-in-depth: the app must never assign innerHTML or use inline event handlers.
+          if grep -rnE '\.innerHTML\s*=|\souton[a-z]+=|javascript:' --include='*.js' --include='*.html' . ; then
+            echo "::error::Found innerHTML / inline handler / javascript: URL - not permitted."; exit 1
+          fi
+          echo "OK - no unsafe DOM sinks."
+      - name: Verify Content-Security-Policy is present
+        run: |
+          grep -q 'http-equiv="Content-Security-Policy"' index.html \
+            || { echo "::error::index.html is missing its CSP meta tag."; exit 1; }
+          echo "OK - CSP present."
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - name: Analyze
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
