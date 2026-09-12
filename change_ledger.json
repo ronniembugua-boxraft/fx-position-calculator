@@ -1,7 +1,7 @@
 {
   "project": "FX Position Calculator",
   "ledger_version": "1.0",
-  "last_change_id": 4,
+  "last_change_id": 5,
   "changes": [
     {
       "id": "CHG-001",
@@ -252,6 +252,47 @@
       "rollback_steps": [
         "Restore overflow-x:auto on .pills and the flex legend in styles.css",
         "Revert the legend markup in index.html and the three setText calls in views.js"
+      ],
+      "protected": false
+    },
+    {
+      "id": "CHG-005",
+      "timestamp": "2026-09-12T12:10:00Z",
+      "type": "fix",
+      "summary": "Legend amounts were offset 12px from their labels; numeric chips rendered at uneven widths from proportional figures",
+      "files_modified": [
+        "styles.css"
+      ],
+      "functions_changed": [],
+      "dependencies": {
+        "depends_on": [
+          "CHG-004"
+        ],
+        "affects": [
+          "feature-size-tab",
+          "feature-risk-tab"
+        ]
+      },
+      "security_review": {
+        "passed": true,
+        "checks": [
+          "css-only-change"
+        ]
+      },
+      "test_verification": {
+        "playwright_tested": true,
+        "regression_tested": true,
+        "test_steps": [
+          "measure at 375x812",
+          "legend label-to-value offset: 0px on all three columns (was 12px)",
+          "lot chip widths: all 61.65px, spread 0 (was 2.22px)",
+          "no horizontal overflow"
+        ],
+        "note": "Both reported from zoomed screenshots and confirmed by measurement before fixing."
+      },
+      "rollback_steps": [
+        "Remove margin-left:12px from .legend .lg-v",
+        "Remove font-variant-numeric:tabular-nums from .pill"
       ],
       "protected": false
     }

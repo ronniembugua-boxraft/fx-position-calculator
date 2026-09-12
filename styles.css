@@ -130,6 +130,7 @@ select {
   flex: none; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted);
   border-radius: var(--r-pill); padding: 9px 15px; font-size: 13px; font-weight: 600;
   cursor: pointer; font-family: inherit; white-space: nowrap; min-height: 38px;
+  font-variant-numeric: tabular-nums;
 }
 .pill[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -146,7 +147,10 @@ select {
 .legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 11px; color: var(--muted); }
 .legend > span { display: block; min-width: 0; }
 .legend i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
-.legend .lg-v { display: block; margin-top: 2px; color: var(--text); font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.legend .lg-v {
+  display: block; margin-top: 2px; margin-left: 12px;   /* clears the dot so it lines up with the label */
+  color: var(--text); font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
 
 /* ---------------------------------------------------------------- alerts */
 .alert { border-radius: var(--r-field); padding: 11px 13px; font-size: 12.5px; margin-top: 12px; line-height: 1.5; }
