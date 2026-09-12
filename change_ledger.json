@@ -1,7 +1,7 @@
 {
   "project": "FX Position Calculator",
   "ledger_version": "1.0",
-  "last_change_id": 5,
+  "last_change_id": 6,
   "changes": [
     {
       "id": "CHG-001",
@@ -295,6 +295,55 @@
         "Remove font-variant-numeric:tabular-nums from .pill"
       ],
       "protected": false
+    },
+    {
+      "id": "CHG-006",
+      "timestamp": "2026-09-12T12:30:00Z",
+      "type": "fix",
+      "summary": "Service worker never converged on new deployments: revalidation was served by the HTTP cache, so a stale shell persisted indefinitely",
+      "files_modified": [
+        "sw.js",
+        "test/sw.test.mjs"
+      ],
+      "functions_changed": [
+        "install handler",
+        "fetch handler",
+        "put"
+      ],
+      "dependencies": {
+        "depends_on": [
+          "CHG-003"
+        ],
+        "affects": [
+          "offline-shell",
+          "all-features"
+        ]
+      },
+      "security_review": {
+        "passed": true,
+        "checks": [
+          "same-origin-only",
+          "no-opaque-caching",
+          "non-get-bypass",
+          "status-200-basic-only"
+        ]
+      },
+      "test_verification": {
+        "playwright_tested": true,
+        "regression_tested": true,
+        "test_steps": [
+          "load live site, confirm old shell served from cache",
+          "deploy fix, reload, confirm new markup reaches the page",
+          "verify legend offsets 0px and lot chip spread 0px on the live origin",
+          "6 new unit tests asserting no-cache revalidation, network-first navigation, versioned cache, cross-origin bypass"
+        ],
+        "note": "Found only by testing the deployed site as a returning visitor; local testing hid it because the cache was cleared each time."
+      },
+      "rollback_steps": [
+        "Restore the single cache-first fetch handler in sw.js",
+        "Revert CACHE to fxcalc-v1"
+      ],
+      "protected": true
     }
   ],
   "protected_patterns": [
@@ -307,6 +356,11 @@
       "pattern": "rates.js",
       "reason": "Untrusted third-party input boundary. Validation is fail-closed and the fetch must stay header-free: open.er-api.com answers OPTIONS with 405, so any custom header triggers a preflight that kills the request in-browser while still working in curl.",
       "added_by": "CHG-002"
+    },
+    {
+      "pattern": "sw.js",
+      "reason": "Cache policy is load-bearing. Revalidation must use cache:'no-cache' and navigations must be network-first, or deployments silently fail to reach existing users. CACHE must be bumped on release.",
+      "added_by": "CHG-006"
     }
   ],
   "security_audit_log": [
@@ -321,6 +375,12 @@
       "finding": "Trusted Types blocked service worker registration; an unparseable input left a stale plausible result on screen",
       "resolution": "one-file createScriptURL policy instead of weakening CSP; invalid input now nulls the value and blanks the result",
       "severity": "medium"
+    },
+    {
+      "change": "CHG-006",
+      "finding": "Stale shell meant a shipped correctness fix would never reach an existing user - severe for a tool people size real trades with",
+      "resolution": "no-cache revalidation, network-first navigation, versioned cache with activate-time purge",
+      "severity": "high"
     }
   ]
 }
